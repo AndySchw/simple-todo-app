@@ -96,11 +96,32 @@ simple-todo-app/
 - kubectl
 - eksctl
 - AWS CLI (konfiguriert)
-- GitHub Account (für CI/CD)
+- GitHub Account (für CI/CD - optional)
 - Lens (optional aber empfohlen)
 ```
 
-### Quick Start (5 Schritte)
+### 🚀 Super-Einfach: 3 Befehle zum Bauen & Deployen
+
+**Du hast einen Mac M1/M2/M3?** Kein Problem!
+
+```bash
+# 1. Backend bauen (funktioniert auch auf ARM64-Mac!)
+./build-backend.sh
+
+# 2. Frontend bauen
+./build-frontend.sh
+
+# 3. Deployen
+./deploy.sh
+```
+
+**Das war's!** Die Skripte bauen automatisch die richtigen Images (AMD64) für EKS.
+
+📖 **Siehe:** [QUICKSTART.md](QUICKSTART.md) für Details
+
+---
+
+### Quick Start (Komplettes Setup)
 
 ```bash
 # 1. Repository klonen/forken
@@ -117,20 +138,32 @@ eksctl create cluster -f kubernetes/cluster-config.yaml
 aws ec2 authorize-security-group-ingress \
   --group-id <RDS-SG> --port 5432 --source-group <EKS-SG>
 
-# 5. Deployen
-kubectl apply -f kubernetes/
+# 5. Images bauen und deployen
+./build-backend.sh
+./build-frontend.sh
+./deploy.sh
 ```
 
 **Vollständige Anleitung:** [📖 Complete Deployment Guide](docs/deployment-guide-complete.md)
 
+### ⚠️ Wichtig: Docker Images auf Mac M1/M2/M3
+
+**Problem:** Mac baut ARM64-Images, aber EKS braucht AMD64!
+
+**Lösung:** Die Build-Skripte machen es automatisch richtig:
+- `build-backend.sh` - Baut mit `--platform linux/amd64`
+- `build-frontend.sh` - Baut kompatibles Frontend-Image
+
+**Oder manuell:**
+```bash
+docker build --platform linux/amd64 -t <IMAGE> ./backend
+```
+
 ### Kritische Setup-Schritte
 
-⚠️ **Wichtig:** Diese Schritte sind entscheidend für ein funktionierendes Deployment!
-
 1. **RDS Security Group** muss Traffic von EKS erlauben
-2. **Docker Images** müssen für AMD64 (nicht ARM64) gebaut werden
-3. **GitHub Secrets** korrekt konfigurieren für CI/CD
-4. **Kubernetes Manifests** anpassen (Image-URLs, RDS-Endpoint)
+2. **Docker Images** mit `--platform linux/amd64` bauen (oder Build-Skripte nutzen)
+3. **Kubernetes Manifests** anpassen (Image-URLs, RDS-Endpoint)
 
 Siehe: [Complete Deployment Guide](docs/deployment-guide-complete.md) für Details.
 
