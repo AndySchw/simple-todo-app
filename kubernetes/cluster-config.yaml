@@ -1,0 +1,33 @@
+# EKS Cluster für Simple Todo App
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: todo-app-cluster
+  region: eu-north-1
+  version: "1.33"
+
+nodeGroups:
+  - name: app-workers
+    instanceType: t3.small      # Etwas größer für Backend + Frontend + Redis
+    privateNetworking: false
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 4
+    volumeSize: 30
+    volumeType: gp3
+
+    labels:
+      tier: application
+      project: todo-app
+      
+      environment: dev
+
+    tags:
+      Project: Simple-Todo-App
+      ManagedBy: eksctl
+      Environment: Development
+      CostCenter: Training
+
+iam:
+  withOIDC: true

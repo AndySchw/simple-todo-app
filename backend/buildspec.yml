@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 539247487622.dkr.ecr.eu-north-1.amazonaws.com
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image for AMD64...
+      - docker build --platform linux/amd64 -t 539247487622.dkr.ecr.eu-north-1.amazonaws.com/todo-backend:$IMAGE_TAG .
+      - docker tag 539247487622.dkr.ecr.eu-north-1.amazonaws.com/todo-backend:$IMAGE_TAG 539247487622.dkr.ecr.eu-north-1.amazonaws.com/todo-backend:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push 539247487622.dkr.ecr.eu-north-1.amazonaws.com/todo-backend:$IMAGE_TAG
+      - docker push 539247487622.dkr.ecr.eu-north-1.amazonaws.com/todo-backend:latest

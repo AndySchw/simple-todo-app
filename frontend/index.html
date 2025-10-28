@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Todo App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 Simple Todo App</h1>
+            <p class="subtitle">Kubernetes + Spring Boot + PostgreSQL + Redis</p>
+        </header>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number" id="statsCreated">0</div>
+                <div class="stat-label">Created</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statsUpdated">0</div>
+                <div class="stat-label">Updated</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statsDeleted">0</div>
+                <div class="stat-label">Deleted</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statsDbReads">0</div>
+                <div class="stat-label">DB Reads (uncached)</div>
+            </div>
+            <button onclick="resetStats()" class="reset-btn">Reset Stats</button>
+        </div>
+
+        <!-- Add Todo Form -->
+        <div class="add-todo-section">
+            <input type="text" id="todoTitle" placeholder="Todo Titel..." />
+            <input type="text" id="todoDescription" placeholder="Beschreibung (optional)..." />
+            <button onclick="addTodo()" class="add-btn">+ Hinzufügen</button>
+        </div>
+
+        <!-- Todo List -->
+        <div id="todoList" class="todo-list">
+            <div class="loading">Loading todos...</div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>🚀 Running in Kubernetes | Backend: <span id="backendStatus">Checking...</span></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

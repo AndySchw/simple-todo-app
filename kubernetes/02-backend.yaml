@@ -1,0 +1,91 @@
+# Backend Deployment (Spring Boot)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+    tier: application
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: application
+    spec:
+      containers:
+        - name: backend
+          image: 539247487622.dkr.ecr.eu-north-1.amazonaws.com/todo-backend:latest  # WICHTIG: Ersetzen mit deinem Image
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            # Database Configuration
+            - name: DB_HOST
+              value: "todo-app-db.c98ky8au2kit.eu-north-1.rds.amazonaws.com"  # WICHTIG: RDS Endpoint eintragen
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "tododb"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            # Redis Configuration
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/todos/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/todos/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+
+---
+# Database Secret (WICHTIG: Passwort ändern!)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+stringData:
+  password: "YourSecurePassword123!"  # WICHTIG: Ändere dieses Passwort!
