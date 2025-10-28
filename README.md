@@ -96,53 +96,43 @@ simple-todo-app/
 - kubectl
 - eksctl
 - AWS CLI (konfiguriert)
+- GitHub Account (für CI/CD)
 - Lens (optional aber empfohlen)
 ```
 
-### 1. RDS Datenbank erstellen
+### Quick Start (5 Schritte)
+
 ```bash
-# Siehe: docs/00-rds-setup.md
-aws rds create-db-instance ...
+# 1. Repository klonen/forken
+git clone https://github.com/<USERNAME>/simple-todo-app.git
+cd simple-todo-app
+
+# 2. RDS erstellen (siehe docs/deployment-guide-complete.md)
+aws rds create-db-instance --db-instance-identifier todo-app-db ...
+
+# 3. EKS Cluster erstellen
+eksctl create cluster -f kubernetes/cluster-config.yaml
+
+# 4. RDS Security Group konfigurieren
+aws ec2 authorize-security-group-ingress \
+  --group-id <RDS-SG> --port 5432 --source-group <EKS-SG>
+
+# 5. Deployen
+kubectl apply -f kubernetes/
 ```
 
-### 2. EKS Cluster erstellen
-```bash
-cd kubernetes/
-eksctl create cluster -f cluster-config.yaml
-# Dauert 15-20 Minuten
-```
+**Vollständige Anleitung:** [📖 Complete Deployment Guide](docs/deployment-guide-complete.md)
 
-### 3. Docker Images bauen
-```bash
-cd backend/
-docker build -t todo-backend:v1.0 .
+### Kritische Setup-Schritte
 
-cd ../frontend/
-docker build -t todo-frontend:v1.0 .
-```
+⚠️ **Wichtig:** Diese Schritte sind entscheidend für ein funktionierendes Deployment!
 
-### 4. Deployments anwenden
-```bash
-cd ../kubernetes/
+1. **RDS Security Group** muss Traffic von EKS erlauben
+2. **Docker Images** müssen für AMD64 (nicht ARM64) gebaut werden
+3. **GitHub Secrets** korrekt konfigurieren für CI/CD
+4. **Kubernetes Manifests** anpassen (Image-URLs, RDS-Endpoint)
 
-# Redis
-kubectl apply -f 01-redis.yaml
-
-# Backend (YAML vorher anpassen!)
-kubectl apply -f 02-backend.yaml
-
-# Frontend (YAML vorher anpassen!)
-kubectl apply -f 03-frontend.yaml
-```
-
-### 5. App öffnen
-```bash
-# Load Balancer URL holen
-kubectl get service frontend-service
-
-# Browser öffnen
-open http://<LOAD_BALANCER_URL>
-```
+Siehe: [Complete Deployment Guide](docs/deployment-guide-complete.md) für Details.
 
 ## Lens Integration
 
@@ -282,35 +272,51 @@ aws rds delete-db-instance \
 
 ## Troubleshooting
 
-### Backend startet nicht
-```bash
-# Logs prüfen
-kubectl logs <backend-pod>
+**Siehe detaillierte Troubleshooting-Guides:**
+- 📖 [Complete Deployment Guide](docs/deployment-guide-complete.md) - Vollständige Schritt-für-Schritt Anleitung
+- 🔧 [Troubleshooting Guide](docs/TROUBLESHOOTING.md) - Häufige Probleme und Lösungen
 
-# Häufige Fehler:
-# - RDS Connection refused → Security Group öffnen
-# - Authentication failed → Passwort im Secret prüfen
-# - Redis not found → redis-service deployed?
+### Schnelle Diagnose
+
+```bash
+# Pod Status prüfen
+kubectl get pods --all-namespaces
+
+# Pod Logs anzeigen
+kubectl logs -l app=backend --tail=50
+
+# Service Status
+kubectl get services
 ```
 
-### Frontend zeigt "Backend OFFLINE"
-```bash
-# Backend Service prüfen
-kubectl get service backend-service
+### Häufigste Probleme
 
-# Backend Pods prüfen
-kubectl get pods -l app=backend
+#### 1. Backend crasht: "exec format error"
+**Ursache:** Image für falsche Architektur gebaut (ARM64 statt AMD64)
+**Lösung:** Verwende GitHub Actions für AMD64-Builds (siehe [Deployment Guide](docs/deployment-guide-complete.md#teil-4-docker-images-bauen-und-zu-ecr-pushen))
+
+#### 2. Backend kann RDS nicht erreichen
+**Ursache:** RDS Security Group blockiert EKS
+**Lösung:**
+```bash
+aws ec2 authorize-security-group-ingress \
+  --group-id <RDS-SG> \
+  --protocol tcp \
+  --port 5432 \
+  --source-group <EKS-SG> \
+  --region eu-north-1
 ```
 
-### Pods bleiben "Pending"
+#### 3. GitHub Actions - 401 Unauthorized
+**Ursache:** IAM User fehlen ECR-Permissions
+**Lösung:**
 ```bash
-# Events anschauen
-kubectl describe pod <pod-name>
-
-# Häufig:
-# - Nicht genug Ressourcen auf Nodes
-# - Image Pull Error
+aws iam attach-user-policy \
+  --user-name <IAM-USER> \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
 ```
+
+**Vollständige Lösungen:** Siehe [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ## Weiterführende Links
 
